@@ -2,12 +2,10 @@ package com.powerpoint45.lucidbrowser;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Vector;
-
-import views.CustomWebView;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -19,10 +17,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -61,6 +59,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import bookmarkModel.Bookmark;
 import bookmarkModel.BookmarksManager;
+import views.CustomWebView;
+import views.WebLayoutView;
 
 public class MainActivity extends BrowserHandler {
 	public static Activity           activity;
@@ -78,7 +78,7 @@ public class MainActivity extends BrowserHandler {
 	static FrameLayout                 contentFrame;
 	public static DrawerLayout         contentView; 
 	
-	public static LinearLayout        webLayout;
+	public static WebLayoutView       webLayout;
 	public static ListView            browserListView;
 	public static BrowserImageAdapter browserListViewAdapter;
 	static Vector <CustomWebView>     webWindows;
@@ -103,7 +103,7 @@ public class MainActivity extends BrowserHandler {
 		
 		bar                       = new RelativeLayout(this);
 		
-		webLayout                 = (LinearLayout) inflater.inflate(R.layout.page_web, null);
+		webLayout                 = (WebLayoutView) inflater.inflate(R.layout.page_web, null);
 		browserListViewAdapter    = new BrowserImageAdapter(this);
 		webWindows                = new Vector<CustomWebView>();
 		
@@ -323,6 +323,8 @@ public class MainActivity extends BrowserHandler {
 				WV.loadUrl(q);
 			else if (q.startsWith("www."))
 				WV.loadUrl("http://"+q);
+			else if (q.startsWith("file:"))
+				WV.loadUrl(q);
 			else
 				WV.loadUrl("http://"+q);
 		}
@@ -419,6 +421,8 @@ public class MainActivity extends BrowserHandler {
 			}
             break;
 		case R.id.browser_find_on_page:
+			actionBarControls.show();
+			actionBarControls.lock(true);
 			SetupLayouts.setUpFindBar();
 			setUpFindBarListeners();
 			suggestionsAdapter = null;
@@ -619,6 +623,7 @@ public class MainActivity extends BrowserHandler {
 	@Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        Log.d("LB", "onNewIntent");
         if ((intent.getFlags() & Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT) !=
                 Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT) {
         	contentView.closeDrawers();
@@ -661,25 +666,60 @@ public class MainActivity extends BrowserHandler {
 	}
 	
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+		
+		Handler mHandler = new Handler() {
+
+	    @Override
+	        public void handleMessage(Message msg) {
+	            // Get link-URL.
+	            final String url = (String) msg.getData().get("url");
+
+	            // Do something with it.
+	            if (url != null){
+	            	runOnUiThread(new Runnable() {
+						
+						@Override
+						public void run() {
+							LinearLayout inflateView = ((LinearLayout) MainActivity.inflater.inflate(R.layout.web_menu_popup, null));
+			            	inflateView.findViewById(R.id.saveimage).setVisibility(View.GONE);
+			            	inflateView.setTag(url);
+			                MainActivity.dialog = new Dialog(MainActivity.activity);
+						    MainActivity.dialog.setTitle(R.string.wallpaper_instructions);
+							MainActivity.dialog.setContentView(inflateView);
+						    MainActivity.dialog.show();
+						}
+					});
+	            	 
+	            }
+	        }
+	    };
+	    
  	    // Confirm the view is a webview
  	    if (v instanceof WebView) {
  	        WebView.HitTestResult result = ((WebView) v).getHitTestResult();
-
- 	        if (result != null) {
+ 	        if (result != null && result.getExtra()!=null && !result.getExtra().startsWith("file:")) {
  	            int type = result.getType();
 
- 	            if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
+ 	            if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE || result.getExtra().startsWith("data:")) {
 	                LinearLayout inflateView = ((LinearLayout) MainActivity.inflater.inflate(R.layout.web_menu_popup, null));
 	                
-	           if (type != WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE){
-	        	   inflateView.findViewById(R.id.saveimage).setVisibility(View.GONE);	        	   
+		           if (type != WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE || result.getExtra().startsWith("data:")){
+		        	   inflateView.findViewById(R.id.saveimage).setVisibility(View.GONE);	        	   
+		           }
+		                
+		                
+	                if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE){
+		                Message msg = mHandler.obtainMessage();
+		                webWindows.get(getTabNumber()).requestFocusNodeHref(msg);
+	                }else{
+	                	inflateView.setTag(result.getExtra());
+	                	MainActivity.dialog = new Dialog(MainActivity.activity);
+						MainActivity.dialog.setTitle(R.string.wallpaper_instructions);
+						MainActivity.dialog.setContentView(inflateView);
+						MainActivity.dialog.show();
+	                }
+		                
 	           }
-	                inflateView.setTag(result.getExtra());
-	                MainActivity.dialog = new Dialog(MainActivity.activity);
-					MainActivity.dialog.setTitle(R.string.wallpaper_instructions);
-					MainActivity.dialog.setContentView(inflateView);
-					MainActivity.dialog.show();
-	            }
  	           else if (type == WebView.HitTestResult.IMAGE_TYPE || type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
  	                LinearLayout inflateView = ((LinearLayout) MainActivity.inflater.inflate(R.layout.web_menu_popup, null));
  	                
@@ -703,11 +743,10 @@ public class MainActivity extends BrowserHandler {
 		switch(v.getId()){
 		case R.id.saveimage:
 			dismissDialog();
-			try {
-				dlImage(new URL(((LinearLayout) v.getParent()).getTag().toString()));//method in handler
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-			}
+			String url = ((LinearLayout) v.getParent()).getTag().toString();
+	        Tools.DownloadAsyncTask download = new Tools.DownloadAsyncTask(url);
+	        download.execute(url);
+	        
 			break;
 		case R.id.openinnewtab:
 			dismissDialog();
@@ -720,13 +759,13 @@ public class MainActivity extends BrowserHandler {
 			break;
 		case R.id.copyurl:
 			dismissDialog();
-			String url = ((LinearLayout) v.getParent()).getTag().toString();
+			String url2 = ((LinearLayout) v.getParent()).getTag().toString();
 			
 			// Gets a handle to the Clipboard Manager
 		    ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-		    ClipData clip = ClipData.newPlainText("Copied URL", url);
+		    ClipData clip = ClipData.newPlainText("Copied URL", url2);
 		    clipboard.setPrimaryClip(clip);
-
+		    break;
 			
 			
 		}	
@@ -816,25 +855,6 @@ public class MainActivity extends BrowserHandler {
         }
  };
  
- @Override
-	public void onConfigurationChanged(Configuration newConfig) {
-	  super.onConfigurationChanged(newConfig);
-//	  if (Properties.appProp.transparentNav || Properties.appProp.TransparentStatus){
-//		 
-//
-//		  CustomWebView WV = (CustomWebView) webLayout.findViewById(R.id.browser_page);
-//		  if (WV!=null && WV.isVideoPlaying()){
-//			  Log.d("LB", "do nothing");
-//		  }else{
-//			  Properties.ActionbarSize= Tools.getActionBarSize();
-//			  StatusMargine = Tools.getStatusMargine();
-//			  Log.d("LB", "SM"+StatusMargine+"  "+"ABS"+Properties.ActionbarSize);
-//			  browserListView.setPadding(0, 0, 0, NavMargine+StatusMargine);
-//			  browserListView.setY(StatusMargine);			
-//			  MainActivity.webLayout.setPadding(0, MainActivity.StatusMargine, 0, 0);
-//		  }
-//		}
-	}
  
     @Override
  	public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -855,6 +875,37 @@ public class MainActivity extends BrowserHandler {
 	if (isFinishing())
 		clearAllTabsForExit();
 	}
+	
+	
+	@SuppressLint("NewApi")
+	@Override   
+	 protected void onActivityResult(int requestCode, int resultCode,  
+	                                    Intent intent) {  
+		  if(requestCode==VideoEnabledWebChromeClient.FILECHOOSER_RESULTCODE)  
+		  {   
+			   if (VideoEnabledWebChromeClient.mUploadMessage!=null){
+			        Uri result = intent == null || resultCode != RESULT_OK ? null  
+			                : intent.getData();  
+			        VideoEnabledWebChromeClient.mUploadMessage.onReceiveValue(result);  
+			        VideoEnabledWebChromeClient.mUploadMessage = null;
+			   }
+			   if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP){
+				   if (VideoEnabledWebChromeClient.mUploadMessageLol != null){
+					   Uri[] uris = VideoEnabledWebChromeClient.FileChooserParams.parseResult(resultCode, intent);
+					   VideoEnabledWebChromeClient.mUploadMessageLol.onReceiveValue(uris);
+					   VideoEnabledWebChromeClient.mUploadMessageLol = null;
+				   }else{
+					   Uri result = intent == null || resultCode != RESULT_OK ? null  
+				                : intent.getData();  
+					   Uri[] uriss = new Uri[1];
+					   uriss[0] = result;
+				       VideoEnabledWebChromeClient.mUploadMessageLol.onReceiveValue(uriss);  
+				       VideoEnabledWebChromeClient.mUploadMessageLol = null;
+				   }
+			   }
+	           
+		  }
+	  }
  
  	void saveState(){
 	 SharedPreferences savedInstancePreferences = getSharedPreferences("state",0);
@@ -884,6 +935,7 @@ public class MainActivity extends BrowserHandler {
 			  if (webWindows.get(I)==WV)
 				  tabNumber=I;
 		 }
+	 
 	 return tabNumber;
  }
  

@@ -9,6 +9,7 @@ import android.widget.EditText;
 public class ActionBarControls {
 	ActionBar actionBar;
 	public boolean hidden = false;
+	boolean locked;
 	
 	public ActionBarControls(ActionBar ab){
 		actionBar = ab;
@@ -19,7 +20,9 @@ public class ActionBarControls {
   		actionBar.setBackgroundDrawable(colorDrawable);
 	}
 	
-	
+	public void lock(boolean lock){
+		locked = lock;
+	}
 	
 	public void hide(){
 		//if (hidden!=true){
@@ -60,19 +63,21 @@ public class ActionBarControls {
 	
 	
 	public void move(float f){
-		Float curToolbarY = MainActivity.toolbar.getY()-Tools.getStatusSize();
-		Float newToolbarY = curToolbarY + f;
-		
-		int margine = Tools.getStatusMargine();
-		
-		if (newToolbarY<-Properties.ActionbarSize)
-			newToolbarY = (float) -Properties.ActionbarSize;
-		
-		if (newToolbarY>0)
-			newToolbarY = 0f;
-		
-		MainActivity.webLayout.setY((int) (newToolbarY + margine));
-		MainActivity.toolbar.setY(newToolbarY+Tools.getStatusSize());
+		if (!locked){
+			Float curToolbarY = MainActivity.toolbar.getY()-Tools.getStatusSize();
+			Float newToolbarY = curToolbarY + f;
+			
+			int margine = Tools.getStatusMargine();
+			
+			if (newToolbarY<-Properties.ActionbarSize)
+				newToolbarY = (float) -Properties.ActionbarSize;
+			
+			if (newToolbarY>0)
+				newToolbarY = 0f;
+			
+			MainActivity.webLayout.setY((int) (newToolbarY + margine));
+			MainActivity.toolbar.setY(newToolbarY+Tools.getStatusSize());
+		}
 	}
 	
 	public void show(){
@@ -105,13 +110,15 @@ public class ActionBarControls {
 	}
 	
 	public void showOrHide(){
-		Float curY = MainActivity.webLayout.getY();
-		
-		if (curY<(MainActivity.toolbar.getHeight()+Tools.getStatusSize())/2){
-			hide();
+		if (!locked){
+			Float curY = MainActivity.webLayout.getY();
+			
+			if (curY<(MainActivity.toolbar.getHeight()+Tools.getStatusSize())/2){
+				hide();
+			}
+			else
+				show();
 		}
-		else
-			show();
 	}
 	
 	public void actionCanceled(){

@@ -116,9 +116,6 @@ public class SetupLayouts extends MainActivity {
 		} else if (Properties.sidebarProp.theme.compareTo("w") == 0) {
 			browserListView.setBackgroundColor(Color.argb(
 					254, 255, 255, 255));
-			activity.setContentView(R.layout.browser_item);
-
-			
 		} else {
            browserListView.setBackgroundColor(Properties.sidebarProp.sideBarColor);
 		}
@@ -508,6 +505,7 @@ public class SetupLayouts extends MainActivity {
 	}
 
 	static public void dismissFindBar(){
+		actionBarControls.lock(false);
 		if (bar.findViewById(R.id.find_searchbar)!=null)
 			MainActivity.imm.hideSoftInputFromWindow(bar.findViewById(R.id.find_searchbar).getWindowToken(),0);
 		

@@ -1,8 +1,17 @@
 package views;
 
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.util.Calendar;
 import java.util.Date;
+
+import com.powerpoint45.lucidbrowser.BookmarksActivity;
+import com.powerpoint45.lucidbrowser.MainActivity;
+import com.powerpoint45.lucidbrowser.Properties;
+import com.powerpoint45.lucidbrowser.R;
+import com.powerpoint45.lucidbrowser.Tools;
+import com.powerpoint45.lucidbrowser.VideoEnabledWebChromeClient;
+import com.powerpoint45.lucidbrowser.WebAddress;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -22,7 +31,6 @@ import android.os.Handler;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -37,21 +45,14 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 
-import com.powerpoint45.lucidbrowser.BookmarksActivity;
-import com.powerpoint45.lucidbrowser.MainActivity;
-import com.powerpoint45.lucidbrowser.Properties;
-import com.powerpoint45.lucidbrowser.R;
-import com.powerpoint45.lucidbrowser.VideoEnabledWebChromeClient;
-import com.powerpoint45.lucidbrowser.WebAddress;
-
-public class CustomWebView extends WebView {
+public class CustomWebView extends WebView{
 
 	private ProgressBar PB;
 	private boolean videoPlaying;
 	VideoEnabledWebChromeClient chromeClient;
 
 	@SuppressWarnings("deprecation")
-	@SuppressLint("SetJavaScriptEnabled")
+	@SuppressLint({ "SetJavaScriptEnabled", "NewApi" })
 	public CustomWebView(Context context, AttributeSet set, String url) {
 		super(context, set);
 		this.setId(R.id.browser_page);
@@ -105,7 +106,12 @@ public class CustomWebView extends WebView {
 		this.getSettings().setDisplayZoomControls(false);
 		this.getSettings().setUseWideViewPort(true);
 		this.getSettings().setSaveFormData(true);
-		
+		this.getSettings().setSavePassword(true);
+		this.getSettings().setAllowFileAccess(true);
+		methodInvoke(this.getSettings(), "setAllowUniversalAccessFromFileURLs", new Class[] { boolean.class }, new Object[] { true });
+        methodInvoke(this.getSettings(), "setAllowFileAccessFromFileURLs", new Class[] { boolean.class }, new Object[] { true });
+        
+        
 		if (Properties.webpageProp.fontSize==0)
 			this.getSettings().setTextSize(WebSettings.TextSize.SMALLEST);
 		if (Properties.webpageProp.fontSize==1)
@@ -164,14 +170,14 @@ public class CustomWebView extends WebView {
 					Intent intent;
 					try {
 						intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+						intent.putExtra("tabNumber", MainActivity.getTabNumber());
+						MainActivity.activity.startActivity(intent);
+						return true;
 					} catch (URISyntaxException e) {
 						e.printStackTrace();
 						System.out.println("INVALID INTENT URI");
 						return false;
 					}
-					intent.putExtra("tabNumber", MainActivity.getTabNumber());
-					MainActivity.activity.startActivity(intent);
-					return true;
 				} else if (url.startsWith("mailto:")) {
 
 					Intent intent = new Intent(Intent.ACTION_VIEW, Uri
@@ -194,8 +200,13 @@ public class CustomWebView extends WebView {
 				}else if(url.startsWith("http:") || url.startsWith("https:") ) {
 			        return false; 
 			    }else{
+			    	try{
 				    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
 				    MainActivity.activity.startActivity(intent); 
+				    return true;
+			    	}catch(Exception e){
+			    		
+			    	}
 			    }
 				
 				return false;
@@ -203,6 +214,8 @@ public class CustomWebView extends WebView {
 
 			@Override
 			public void onPageStarted(WebView view, String url, Bitmap favicon) {
+				super.onPageStarted(CustomWebView.this, url, favicon);
+				Log.d("LB", "start" + url);
 				if (PB == null)
 					try {
 						PB = (ProgressBar) MainActivity.webLayout
@@ -226,6 +239,7 @@ public class CustomWebView extends WebView {
 			
 			@Override
 			public void onPageFinished(WebView view, String url) {
+				super.onPageFinished(view, url);
 				if (PB == null)
 					PB = (ProgressBar) MainActivity.webLayout
 							.findViewById(R.id.webpgbar);
@@ -308,7 +322,7 @@ public class CustomWebView extends WebView {
 			@Override
 			public void onReceivedSslError(WebView view,
 					SslErrorHandler handler, SslError error) {
-
+				super.onReceivedSslError(view, handler, error);
 				int errorCode = error.getPrimaryError();
 				System.out.println("SSL ERROR " + errorCode + " DETECTED");
 
@@ -430,34 +444,27 @@ public class CustomWebView extends WebView {
 		 
 		        // get file name. if filename exists in contentDisposition, use it. otherwise, use the last part of the url. 
 		        String fileName = downloadUri.getLastPathSegment();
-		        int pos = 0;
-		 
-		        System.out.println("MT"+mimetype);
-		        if ((pos = contentDisposition.toLowerCase().lastIndexOf("filename=")) >= 0) {
-		            fileName = contentDisposition.substring(pos + 9);
-		            pos = fileName.lastIndexOf(";");
-		 
-		            if (pos > 0) {
-		                fileName = fileName.substring(0, pos - 1);
-		            } 
-		        } 
+		        
+		        String headerFileName = Tools.getFileNameFromHeader(contentDisposition);
+		        if (headerFileName!=null)
+		        	fileName = headerFileName;
 
-		        fileName=fileName.replaceAll("\"", "");
-
-//		       
-//		        request.setDescription(url);
-//		        request.setMimeType(mimetype);  
-//		        request.setDestinationInExternalPublicDir( Environment.DIRECTORY_DOWNLOADS, fileName);
-//		 
-//		        Environment.getExternalStoragePublicDirectory( Environment.DIRECTORY_DOWNLOADS).mkdirs();
-//		 
-//		        // request in download manager 
-//		        downloadManager.enqueue(request);
 				onDownloadStartNoStream(MainActivity.activity, url, userAgent, contentDisposition, mimetype, fileName, false);
 		    }
 		}); 
 
 	}
+	
+	private final static Object methodInvoke(Object obj, String method, Class<?>[] parameterTypes, Object[] args) {
+        try {
+            Method m = obj.getClass().getMethod(method, new Class[] { boolean.class });
+            m.invoke(obj, args);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
 
 	public CustomWebView(Context context) {
 		super(context);
@@ -524,35 +531,51 @@ public class CustomWebView extends WebView {
 		}
 	}
 
-	float downY;
-	float upY;
+//	float downY;
+//	float upY;
+//	float actualY;
+//	
+//	@Override 
+//	public boolean onTouchEvent(MotionEvent event) {
+//		switch (event.getAction()){
+//		
+//		case MotionEvent.ACTION_DOWN:
+//			downY = event.getY();
+//			actualY = event.getRawY();
+//			break;
+//			
+//		case MotionEvent.ACTION_MOVE:
+//			MainActivity.actionBarControls.move(event.getY()-downY);
+//			
+//			if (Math.abs(event.getY()-downY)>Properties.numtodp(5)){
+//				cancelLongPress();
+//				clearFocus();
+//			}
+//			
+//			if (Math.abs(event.getRawY()-actualY)>Properties.numtodp(5)){
+//				cancelLongPress();
+//				clearFocus();
+//			}
+//			
+//			break;
+//			
+//		case MotionEvent.ACTION_UP:
+//			MainActivity.actionBarControls.showOrHide();
+//			break;
+//			
+//		case MotionEvent.ACTION_CANCEL:
+//			MainActivity.actionBarControls.actionCanceled();
+//			break;
+//		
+//		}
+//	    return super.onTouchEvent(event);
+//	} 
 	
-	@Override 
-	public boolean onTouchEvent(MotionEvent event) {
-		switch (event.getAction()){
-		
-		case MotionEvent.ACTION_DOWN:
-			downY = event.getY();
-			break;
-			
-		case MotionEvent.ACTION_MOVE:
-			MainActivity.actionBarControls.move(event.getY()-downY);
-			
-			if (Math.abs((downY-event.getY()))>Properties.numtodp(10))
-				cancelLongPress();
-			break;
-			
-		case MotionEvent.ACTION_UP:
-			MainActivity.actionBarControls.showOrHide();
-			break;
-			
-		case MotionEvent.ACTION_CANCEL:
-			MainActivity.actionBarControls.actionCanceled();
-			break;
-		
-		}
-	    return super.onTouchEvent(event);
-	} 
+	
+	
+	
+	
+	
 
 	
 	/**
@@ -566,7 +589,7 @@ public class CustomWebView extends WebView {
      * @param referer The referer associated with the downloaded url
      * @param privateBrowsing If the request is coming from a private browsing tab.
      */
-    static void onDownloadStartNoStream(Activity activity,
+    public static void onDownloadStartNoStream(Activity activity,
             String url, String userAgent, String contentDisposition,
             String mimetype, String fileName, boolean privateBrowsing) {
 
@@ -579,7 +602,7 @@ public class CustomWebView extends WebView {
         } catch (Exception e) {
             // This only happens for very bad urls, we want to chatch the
             // exception here
-            Log.e("LB", "Exception trying to parse url:" + url);
+            Log.e("browser", "Exception trying to parse url:" + url);
             return;
         }
         String addressString = webAddress.toString();
@@ -624,6 +647,8 @@ public class CustomWebView extends WebView {
                 }
             }.start();
         }
+        
+        Tools.toastString(R.string.download_started, activity);
 
     }
     

@@ -1,18 +1,24 @@
 package com.powerpoint45.lucidbrowser;
 
-import views.CustomWebView;
+import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
+import android.widget.Toast;
+import views.CustomWebView;
 
 public class VideoEnabledWebChromeClient extends WebChromeClient implements OnPreparedListener, OnCompletionListener, OnErrorListener
 {
@@ -36,7 +42,6 @@ public class VideoEnabledWebChromeClient extends WebChromeClient implements OnPr
      * Never use this constructor alone.
      * This constructor allows this class to be defined as an inline inner class in which the user can override methods
      */
-    @SuppressWarnings("unused")
     public VideoEnabledWebChromeClient()
     {
     }
@@ -46,7 +51,6 @@ public class VideoEnabledWebChromeClient extends WebChromeClient implements OnPr
      * @param activityNonVideoView A View in the activity's layout that contains every other view that should be hidden when the video goes full-screen.
      * @param activityVideoView A ViewGroup in the activity's layout that will display the video. Typically you would like this to fill the whole layout.
      */
-    @SuppressWarnings("unused")
     public VideoEnabledWebChromeClient(CustomWebView activityNonVideoView)
     {
         this.activityNonVideoView = activityNonVideoView;
@@ -179,7 +183,6 @@ public class VideoEnabledWebChromeClient extends WebChromeClient implements OnPr
         }
     }
 
-    @Override @SuppressWarnings("deprecation")
     public void onShowCustomView(View view, int requestedOrientation, CustomViewCallback callback) // Available in API level 14+, deprecated in API level 18+
     {
         onShowCustomView(view, callback);
@@ -252,6 +255,7 @@ public class VideoEnabledWebChromeClient extends WebChromeClient implements OnPr
     {
         return false; // By returning false, onCompletion() will be called
     }
+    
 
     /**
      * Notifies the class that the back key has been pressed by the user.
@@ -270,5 +274,77 @@ public class VideoEnabledWebChromeClient extends WebChromeClient implements OnPr
             return false;
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    public static ValueCallback<Uri> mUploadMessage;  
+    public static ValueCallback<Uri[]> mUploadMessageLol;
+    public final static int FILECHOOSER_RESULTCODE=1;  
+    
+    //The undocumented magic method override   
+    //Eclipse will swear at you if you try to put @Override here   
+	// For Android 3.0+
+	public void openFileChooser(ValueCallback<Uri> uploadMsg) {  
+
+     mUploadMessage = uploadMsg;  
+     Intent i = new Intent(Intent.ACTION_GET_CONTENT);  
+     i.addCategory(Intent.CATEGORY_OPENABLE);  
+     i.setType("image/*");  
+     MainActivity.activity.startActivityForResult(Intent.createChooser(i,
+    		 MainActivity.activity.getResources().getString(R.string.choose_upload)), FILECHOOSER_RESULTCODE);  
+
+    } 
+
+    // For Android 3.0+
+    public void openFileChooser( ValueCallback uploadMsg, String acceptType ) {
+    mUploadMessage = uploadMsg;
+    Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+    i.addCategory(Intent.CATEGORY_OPENABLE);
+    i.setType("*/*");
+    MainActivity.activity.startActivityForResult(
+    Intent.createChooser(i, 
+    		MainActivity.activity.getResources().getString(R.string.choose_upload)),
+    FILECHOOSER_RESULTCODE);
+    }
+    
+    
+
+    //For Android 4.1
+    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture){
+        mUploadMessage = uploadMsg;  
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);  
+        i.addCategory(Intent.CATEGORY_OPENABLE);  
+        i.setType("image/*");  
+        MainActivity.activity.startActivityForResult( Intent.createChooser( i, 
+        		MainActivity.activity.getResources().getString(R.string.choose_upload) ), FILECHOOSER_RESULTCODE );
+
+    }
+    
+    //lollipop
+    @SuppressLint("NewApi")
+	public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+        // make sure there is no existing message 
+        if (mUploadMessageLol != null) { 
+        	mUploadMessageLol.onReceiveValue(null); 
+        	mUploadMessageLol = null; 
+        } 
+ 
+        mUploadMessageLol = filePathCallback;
+ 
+        Intent intent = fileChooserParams.createIntent();
+        try { 
+            MainActivity.activity.startActivityForResult(intent, FILECHOOSER_RESULTCODE);
+        } catch (ActivityNotFoundException e) {
+        	mUploadMessageLol = null; 
+            Toast.makeText(MainActivity.activity, "Cannot open file chooser", Toast.LENGTH_LONG).show();
+            return false; 
+        } 
+ 
+        return true; 
+    } 
 
 }

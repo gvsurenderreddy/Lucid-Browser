@@ -3,6 +3,7 @@ package com.powerpoint45.lucidbrowser;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PorterDuff.Mode;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
@@ -92,7 +93,17 @@ public class BrowserImageAdapter extends BaseAdapter{
 				viewHolder.tabStatus.setText(MainActivity.activity.getResources().getString(R.string.home));
 			else
 				viewHolder.tabStatus.setText(MainActivity.webWindows.get(pos).getTitle());
+			
+			if (viewHolder.tabStatus.getText() == null || viewHolder.tabStatus.getText().toString().equals("")){
+				viewHolder.tabStatus.setText("...");
+			}
+			
 			viewHolder.closeButton.setVisibility(View.VISIBLE);
+			
+			if (pos == MainActivity.getTabNumber())
+				viewHolder.tabStatus.setTypeface(null, Typeface.BOLD);
+			else
+				viewHolder.tabStatus.setTypeface(null, Typeface.NORMAL);
 		}
 		
 		//convertView.findViewById(R.id.browser_div).setAlpha(.8f);
