@@ -74,14 +74,14 @@ public class MainActivity extends BrowserHandler {
 	public static RelativeLayout       bar;
 	public static ActionBar            actionBar;
 	public static ActionBarControls    actionBarControls;
-	static Toolbar                     toolbar;
+	public static Toolbar                     toolbar;
 	static FrameLayout                 contentFrame;
 	public static DrawerLayout         contentView; 
 	
 	public static WebLayoutView       webLayout;
 	public static ListView            browserListView;
 	public static BrowserImageAdapter browserListViewAdapter;
-	static Vector <CustomWebView>     webWindows;
+	public static Vector <CustomWebView>     webWindows;
 	static public int NavMargine;   //used in CustomWebView
 	public static List<String> responses;
 	static BrowserBarAdapter suggestionsAdapter;

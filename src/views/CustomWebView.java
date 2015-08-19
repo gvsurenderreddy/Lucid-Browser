@@ -31,6 +31,7 @@ import android.os.Handler;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -125,6 +126,7 @@ public class CustomWebView extends WebView{
 		
 		this.setLayoutParams(new RelativeLayout.LayoutParams(
 				LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		
 		
 		((Activity) MainActivity.activity).registerForContextMenu(this);
 		this.setWebViewClient(new WebViewClient() {

@@ -1,6 +1,7 @@
 package views;
 
 import com.powerpoint45.lucidbrowser.MainActivity;
+import com.powerpoint45.lucidbrowser.Properties;
 
 import android.content.Context;
 import android.util.AttributeSet;
@@ -46,11 +47,16 @@ public class WebLayoutView extends LinearLayout{
 				
 			case MotionEvent.ACTION_MOVE:
 				if (fingerDown){
-					MainActivity.actionBarControls.move(event.getY()-downY);
+					if (Math.abs(event.getRawY()-actualY)>Properties.numtodp(20)){
+						MainActivity.actionBarControls.move(event.getY()-downY);
+					}else{
+						downY = event.getY();
+					}
 				}
 				break;
 				
 			case MotionEvent.ACTION_UP:
+				
 				if (fingerDown){
 					fingerDown = false;
 					MainActivity.actionBarControls.showOrHide();

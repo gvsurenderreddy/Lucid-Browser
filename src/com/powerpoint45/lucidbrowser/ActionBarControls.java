@@ -75,8 +75,10 @@ public class ActionBarControls {
 			if (newToolbarY>0)
 				newToolbarY = 0f;
 			
-			MainActivity.webLayout.setY((int) (newToolbarY + margine));
-			MainActivity.toolbar.setY(newToolbarY+Tools.getStatusSize());
+			if (MainActivity.webLayout.getY()!=newToolbarY+margine){
+				MainActivity.webLayout.setY((int) (newToolbarY + margine));
+				MainActivity.toolbar.setY(newToolbarY+Tools.getStatusSize());
+			}
 		}
 	}
 	
