@@ -31,7 +31,6 @@ import android.os.Handler;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -234,7 +233,8 @@ public class CustomWebView extends WebView{
 				if (IB != null) {
 					IB.setImageResource(R.drawable.btn_toolbar_stop_loading_normal);
 				}
-				
+				CustomToolbar.colorizeToolbar(MainActivity.toolbar, 
+						Properties.appProp.primaryIntColor, MainActivity.activity);
 				setUrlBarText(url);
 			}
 			
@@ -317,6 +317,8 @@ public class CustomWebView extends WebView{
 							BI.setImageResource(R.drawable.btn_omnibox_bookmark_normal);
 						}
 					}
+					CustomToolbar.colorizeToolbar(MainActivity.toolbar, 
+							Properties.appProp.primaryIntColor, MainActivity.activity);
 				}
 
 			}
@@ -654,7 +656,7 @@ public class CustomWebView extends WebView{
 
     }
     
- // This is to work around the fact that java.net.URI throws Exceptions
+    // This is to work around the fact that java.net.URI throws Exceptions
     // instead of just encoding URL's properly
     // Helper method for onDownloadStartNoStream
     private static String encodePath(String path) {

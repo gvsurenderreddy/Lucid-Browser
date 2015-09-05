@@ -38,8 +38,8 @@
             <preferences.ColorPickerPreference
                 android:defaultValue="@android:color/white"
                 android:key="textcolor"
-                android:summary="@string/textcolorsummary"
-                android:title="@string/textcolortitle" />
+                android:summary="@string/actionbar_item_color_summary"
+                android:title="@string/actionbar_item_color_title" />
         </PreferenceCategory>
     </PreferenceScreen>
     <PreferenceScreen

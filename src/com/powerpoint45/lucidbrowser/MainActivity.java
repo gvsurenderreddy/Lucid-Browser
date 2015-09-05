@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.Vector;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -59,6 +60,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import bookmarkModel.Bookmark;
 import bookmarkModel.BookmarksManager;
+import views.CustomToolbar;
 import views.CustomWebView;
 import views.WebLayoutView;
 
@@ -417,7 +419,7 @@ public class MainActivity extends BrowserHandler {
 				}
 				
 				BookmarksActivity.bookmarksMgr.saveBookmarksManager();
-
+				CustomToolbar.colorizeToolbar(toolbar, Properties.appProp.primaryIntColor, MainActivity.activity);
 			}
             break;
 		case R.id.browser_find_on_page:
@@ -882,7 +884,7 @@ public class MainActivity extends BrowserHandler {
 	 protected void onActivityResult(int requestCode, int resultCode,  
 	                                    Intent intent) {  
 		  if(requestCode==VideoEnabledWebChromeClient.FILECHOOSER_RESULTCODE)  
-		  {   
+		  {
 			   if (VideoEnabledWebChromeClient.mUploadMessage!=null){
 			        Uri result = intent == null || resultCode != RESULT_OK ? null  
 			                : intent.getData();  
@@ -902,8 +904,7 @@ public class MainActivity extends BrowserHandler {
 				       VideoEnabledWebChromeClient.mUploadMessageLol.onReceiveValue(uriss);  
 				       VideoEnabledWebChromeClient.mUploadMessageLol = null;
 				   }
-			   }
-	           
+			   } 
 		  }
 	  }
  
